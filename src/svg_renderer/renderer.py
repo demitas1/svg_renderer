@@ -35,9 +35,8 @@ class Renderer:
         self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.width, self.height)
         self.context = cairo.Context(self.surface)
 
-        # Set white background
-        self.context.set_source_rgb(1, 1, 1)
-        self.context.paint()
+        # Transparent background (ARGB32 format is initialized to transparent by default)
+        # No need to paint anything for transparent background
 
         return self.context
 

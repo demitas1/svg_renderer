@@ -35,22 +35,6 @@ pip install lxml pycairo pytest
 
 ## 使い方
 
-### CLIとして使用
-
-```bash
-# レイヤーのリストを表示
-PYTHONPATH=src python -m svg_renderer <SVGファイル> --list-layers
-
-# 単一レイヤーをPNGに出力
-PYTHONPATH=src python -m svg_renderer <SVGファイル> --layer "Layer 1" --output output.png
-
-# 単一レイヤーをSVGに出力
-PYTHONPATH=src python -m svg_renderer <SVGファイル> --layer "Layer 1" --output output.svg --format svg
-
-# 複数レイヤーを組み合わせてPNGに出力
-PYTHONPATH=src python -m svg_renderer <SVGファイル> --layer "Layer 1" --layer "Layer 2" --output combined.png
-```
-
 ### ライブラリとして使用
 
 ```python
@@ -73,26 +57,7 @@ renderer.export_layer_to_svg('Layer 1', 'output.svg')
 renderer.render_layers_to_png(['Layer 1', 'Layer 2'], 'combined.png')
 ```
 
-### 実行例（CLI）
-
-```bash
-# サンプルSVGのレイヤーを確認
-PYTHONPATH=src python -m svg_renderer tests/fixtures/drawing-example.svg --list-layers
-
-# Layer 1をPNGに出力
-PYTHONPATH=src python -m svg_renderer tests/fixtures/drawing-example.svg \
-  --layer "Layer 1" --output layer1.png
-
-# Layer 1をSVGとして抽出
-PYTHONPATH=src python -m svg_renderer tests/fixtures/drawing-example.svg \
-  --layer "Layer 1" --output layer1.svg --format svg
-
-# 両方のレイヤーを結合してPNG出力
-PYTHONPATH=src python -m svg_renderer tests/fixtures/drawing-example.svg \
-  --layer "Layer 1" --layer "Layer 2" --output both_layers.png
-```
-
-### 実行例（ライブラリ）
+### 実行例
 
 ```bash
 # サンプルスクリプトの実行
@@ -107,6 +72,87 @@ python export_layer.py
 # 複数レイヤーを結合
 python combine_layers.py
 ```
+
+## サンプルプログラム（examples）
+
+`src/examples/` ディレクトリには、SVGRendererライブラリの主要な機能を示す3つのサンプルプログラムが含まれています。
+
+### render_layer.py - 単一レイヤーをPNGに出力
+
+**機能**: InkscapeのSVGファイルから指定したレイヤーを抽出し、PNG画像として出力します。
+
+- SVGファイル内の全レイヤー名を一覧表示
+- 指定したレイヤー（"Layer 1"）をPNG形式でレンダリング
+- Cairo描画エンジンを使用した高品質な出力
+
+**使用例**:
+```bash
+cd src/examples
+python render_layer.py
+```
+
+**出力**:
+```
+Available layers:
+  1. Layer 1
+  2. Layer 2
+
+Successfully rendered to example_layer1.png
+```
+
+### export_layer.py - 単一レイヤーをSVGとして抽出
+
+**機能**: InkscapeのSVGファイルから特定のレイヤーのみを抽出し、新しいSVGファイルとして保存します。
+
+- 元のSVGから指定レイヤー（"Layer 1"）の要素のみを抽出
+- 新しいSVGファイルとして保存（Inkscape等で再編集可能）
+- スタイル属性を保持したまま抽出
+
+**使用例**:
+```bash
+cd src/examples
+python export_layer.py
+```
+
+**出力**:
+```
+Successfully exported to example_layer1.svg
+```
+
+### combine_layers.py - 複数レイヤーの結合
+
+**機能**: 複数のレイヤーを組み合わせて、1つのPNGまたはSVGファイルとして出力します。
+
+- SVGファイル内の全レイヤーを取得
+- 全レイヤーを結合してPNG画像として出力
+- 全レイヤーを結合してSVGファイルとして出力
+- レイヤーの重ね順を維持
+
+**使用例**:
+```bash
+cd src/examples
+python combine_layers.py
+```
+
+**出力**:
+```
+Combining 2 layers: Layer 1, Layer 2
+Rendered combined PNG to example_combined.png
+Exported combined SVG to example_combined.svg
+```
+
+### サンプルで使用される主要API
+
+各サンプルでは以下のSVGRenderer APIを使用しています：
+
+| メソッド | 説明 |
+|----------|------|
+| `SVGRenderer(svg_file)` | SVGファイルを読み込んでレンダラーを初期化 |
+| `list_layers()` | 利用可能なレイヤー名のリストを取得 |
+| `render_layer_to_png(layer, output)` | 単一レイヤーをPNGに出力 |
+| `export_layer_to_svg(layer, output)` | 単一レイヤーをSVGとして抽出 |
+| `render_layers_to_png(layers, output)` | 複数レイヤーを結合してPNGに出力 |
+| `export_layers_to_svg(layers, output)` | 複数レイヤーを結合してSVGに出力 |
 
 ## コマンドラインオプション
 

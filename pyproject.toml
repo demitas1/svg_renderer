@@ -1,0 +1,27 @@
+[project]
+name = "svg-renderer"
+version = "0.1.0"
+description = "SVG rendering and manipulation tool for Inkscape SVG files"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "lxml",
+    "pycairo",
+    "pillow",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v"
+
+# Custom option: maximum allowed image difference ratio (0.0-1.0)
+# 0.01 = 1% of pixels can differ
+image_diff_threshold = 0.01
