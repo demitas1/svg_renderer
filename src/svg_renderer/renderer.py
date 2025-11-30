@@ -184,6 +184,10 @@ class Renderer:
             if token in 'MmLlCcZz':
                 current_command = token
                 i += 1
+                # Z/z command has no arguments, process immediately
+                if current_command in ['Z', 'z']:
+                    self.context.close_path()
+                    current_command = None
                 continue
 
             # Process based on current command
