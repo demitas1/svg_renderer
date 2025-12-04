@@ -25,6 +25,9 @@ def main():
     parser.add_argument('--output', '-o', help='Output file path')
     parser.add_argument('--format', '-f', choices=['png', 'svg'], default='png',
                        help='Output format (default: png)')
+    parser.add_argument('--dpi', type=float, default=None,
+                       help='DPI for PNG rendering (e.g., 96 for screen, 300 for print). '
+                            'If not specified, uses viewBox dimensions directly.')
 
     args = parser.parse_args()
 
@@ -34,7 +37,7 @@ def main():
         sys.exit(1)
 
     try:
-        renderer = SVGRenderer(args.input)
+        renderer = SVGRenderer(args.input, dpi=args.dpi)
 
         # List layers mode
         if args.list_layers:

@@ -4,7 +4,7 @@ This module provides the main SVGRenderer class that integrates
 all the components for easy use.
 """
 
-from typing import List
+from typing import List, Optional
 from .parser import SVGParser
 from .layer import LayerExtractor
 from .renderer import Renderer
@@ -14,13 +14,19 @@ from .writer import SVGWriter
 class SVGRenderer:
     """High-level interface for SVG rendering operations."""
 
-    def __init__(self, svg_path: str):
+    # Default DPI for screen display (CSS standard)
+    DEFAULT_DPI = 96.0
+
+    def __init__(self, svg_path: str, dpi: Optional[float] = None):
         """Initialize the renderer with an SVG file.
 
         Args:
             svg_path: Path to the SVG file
+            dpi: DPI for PNG rendering. None uses viewBox size directly (legacy mode),
+                 96 for screen display, 300 for print quality.
         """
         self.svg_path = svg_path
+        self.dpi = dpi
         self.parser = SVGParser(svg_path)
         self.parser.load_svg()
 
@@ -29,6 +35,22 @@ class SVGRenderer:
         self.viewbox = self.parser.get_viewbox()
 
         self.extractor = LayerExtractor(self.root, self.namespaces)
+
+    def _create_renderer(self) -> Renderer:
+        """Create a renderer with appropriate dimensions and scale.
+
+        Returns:
+            Configured Renderer instance
+        """
+        if self.dpi is not None:
+            # DPI-aware rendering
+            width, height = self.parser.calculate_pixel_size(self.dpi)
+            scale = self.parser.calculate_scale(self.dpi)
+            return Renderer(width, height, scale)
+        else:
+            # Legacy mode: use viewBox directly as pixel dimensions
+            _, _, width, height = self.viewbox
+            return Renderer(int(width), int(height))
 
     def render_layer_to_png(self, layer_name: str, output_path: str) -> None:
         """Render a specific layer to PNG.
@@ -47,9 +69,8 @@ class SVGRenderer:
             print(f"Warning: Layer '{layer_name}' contains no path or rect elements.")
             return
 
-        # Create renderer
-        _, _, width, height = self.viewbox
-        renderer = Renderer(int(width), int(height))
+        # Create renderer with DPI support
+        renderer = self._create_renderer()
         renderer.setup_surface()
 
         # Render elements
@@ -78,9 +99,8 @@ class SVGRenderer:
             print(f"Warning: No elements found in specified layers.")
             return
 
-        # Create renderer
-        _, _, width, height = self.viewbox
-        renderer = Renderer(int(width), int(height))
+        # Create renderer with DPI support
+        renderer = self._create_renderer()
         renderer.setup_surface()
 
         # Render all elements

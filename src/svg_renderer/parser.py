@@ -134,6 +134,75 @@ class SVGParser:
         except ValueError:
             raise ValueError(f"Cannot parse dimension: {value}")
 
+    def get_document_unit(self) -> str:
+        """Detect the unit used in the SVG document.
+
+        Checks width/height attributes for units.
+        Common units: mm, px, pt, cm, in
+
+        Returns:
+            Unit string (e.g., 'mm', 'px') or 'px' as default
+        """
+        if self.root is None:
+            raise ValueError("SVG not loaded. Call load_svg() first.")
+
+        width_str = self.root.get('width', '')
+
+        # Check for units in width attribute
+        for unit in ['mm', 'cm', 'in', 'pt', 'pc']:
+            if width_str.endswith(unit):
+                return unit
+
+        # Default to px (unitless is treated as px in SVG)
+        return 'px'
+
+    def calculate_pixel_size(self, dpi: float = 96.0) -> Tuple[int, int]:
+        """Calculate the pixel size for rendering at the specified DPI.
+
+        Args:
+            dpi: Dots per inch for rendering (default 96, standard screen DPI)
+
+        Returns:
+            Tuple of (width, height) in pixels
+        """
+        _, _, vb_width, vb_height = self.get_viewbox()
+        unit = self.get_document_unit()
+
+        # Conversion factors to inches
+        unit_to_inches = {
+            'px': 1.0 / 96.0,  # CSS px is 1/96 inch
+            'pt': 1.0 / 72.0,  # Point is 1/72 inch
+            'pc': 1.0 / 6.0,   # Pica is 1/6 inch
+            'mm': 1.0 / 25.4,  # mm to inches
+            'cm': 1.0 / 2.54,  # cm to inches
+            'in': 1.0,         # inches
+        }
+
+        inches_per_unit = unit_to_inches.get(unit, 1.0 / 96.0)
+
+        # Calculate pixel dimensions
+        width_px = int(round(vb_width * inches_per_unit * dpi))
+        height_px = int(round(vb_height * inches_per_unit * dpi))
+
+        return (width_px, height_px)
+
+    def calculate_scale(self, dpi: float = 96.0) -> float:
+        """Calculate the scale factor from viewBox units to pixels.
+
+        Args:
+            dpi: Dots per inch for rendering
+
+        Returns:
+            Scale factor to multiply viewBox coordinates by
+        """
+        _, _, vb_width, _ = self.get_viewbox()
+        pixel_width, _ = self.calculate_pixel_size(dpi)
+
+        if vb_width == 0:
+            return 1.0
+
+        return pixel_width / vb_width
+
     def get_namespaces(self) -> Dict[str, str]:
         """Get the namespace mapping for this SVG document.
 

@@ -6,9 +6,11 @@ InkscapeのSVGファイルから特定のレイヤーを抽出し、PNG画像ま
 
 - **レイヤー抽出**: Inkscape SVGファイルから名前またはIDでレイヤーを抽出
 - **PNG出力**: 指定したレイヤーをCairoを使って高品質なPNG画像にレンダリング
+- **DPI指定**: 96dpi（画面表示用）から300dpi（印刷用）まで任意のDPIでレンダリング可能
 - **SVG出力**: レイヤーを新しいSVGファイルとして保存
 - **複数レイヤー対応**: 複数のレイヤーを一度にレンダリング・出力可能
 - **スタイル保持**: fill、stroke、stroke-width等のスタイル属性を正確に再現
+- **単位対応**: mm、cm、in、pt等の単位を自動検出してDPI計算に反映
 
 ## インストール
 
@@ -47,7 +49,7 @@ renderer = SVGRenderer('input.svg')
 layers = renderer.list_layers()
 print(layers)
 
-# レイヤーをPNGにレンダリング
+# レイヤーをPNGにレンダリング（viewBoxサイズそのまま）
 renderer.render_layer_to_png('Layer 1', 'output.png')
 
 # レイヤーをSVGとして抽出
@@ -55,6 +57,22 @@ renderer.export_layer_to_svg('Layer 1', 'output.svg')
 
 # 複数レイヤーを結合
 renderer.render_layers_to_png(['Layer 1', 'Layer 2'], 'combined.png')
+```
+
+### DPIを指定してレンダリング
+
+```python
+from svg_renderer import SVGRenderer
+
+# 300dpi（印刷用）でレンダラーを初期化
+renderer = SVGRenderer('input.svg', dpi=300)
+
+# A4サイズ（210mm x 297mm）のSVGの場合、出力は 2480 x 3508 ピクセル
+renderer.render_layer_to_png('Layer 1', 'output_300dpi.png')
+
+# 96dpi（画面表示用）の場合
+renderer_screen = SVGRenderer('input.svg', dpi=96)
+renderer_screen.render_layer_to_png('Layer 1', 'output_96dpi.png')
 ```
 
 ### 実行例
@@ -147,20 +165,53 @@ Exported combined SVG to example_combined.svg
 
 | メソッド | 説明 |
 |----------|------|
-| `SVGRenderer(svg_file)` | SVGファイルを読み込んでレンダラーを初期化 |
+| `SVGRenderer(svg_file, dpi=None)` | SVGファイルを読み込んでレンダラーを初期化（dpiで解像度指定） |
 | `list_layers()` | 利用可能なレイヤー名のリストを取得 |
 | `render_layer_to_png(layer, output)` | 単一レイヤーをPNGに出力 |
 | `export_layer_to_svg(layer, output)` | 単一レイヤーをSVGとして抽出 |
 | `render_layers_to_png(layers, output)` | 複数レイヤーを結合してPNGに出力 |
 | `export_layers_to_svg(layers, output)` | 複数レイヤーを結合してSVGに出力 |
 
-## コマンドラインオプション
+## コマンドラインインターフェース
 
-- `input`: 入力SVGファイルのパス（必須）
-- `--list-layers`: SVGファイル内のレイヤーをリスト表示
-- `--layer`, `-l`: 処理するレイヤーの名前またはID（複数指定可能）
-- `--output`, `-o`: 出力ファイルのパス
-- `--format`, `-f`: 出力形式（`png`または`svg`、デフォルト: `png`）
+### 基本的な使い方
+
+```bash
+# レイヤーの一覧を表示
+PYTHONPATH=src python -m svg_renderer input.svg --list-layers
+
+# レイヤーをPNGにレンダリング（viewBoxサイズそのまま）
+PYTHONPATH=src python -m svg_renderer input.svg --layer "Layer 1" -o output.png
+
+# 300dpiでレンダリング（印刷用）
+PYTHONPATH=src python -m svg_renderer input.svg --layer "Layer 1" --dpi 300 -o output.png
+
+# SVG形式で出力
+PYTHONPATH=src python -m svg_renderer input.svg --layer "Layer 1" -f svg -o output.svg
+```
+
+### オプション一覧
+
+| オプション | 説明 |
+|-----------|------|
+| `input` | 入力SVGファイルのパス（必須） |
+| `--list-layers` | SVGファイル内のレイヤーをリスト表示 |
+| `--layer`, `-l` | 処理するレイヤーの名前またはID（複数指定可能） |
+| `--output`, `-o` | 出力ファイルのパス |
+| `--format`, `-f` | 出力形式（`png`または`svg`、デフォルト: `png`） |
+| `--dpi` | PNGレンダリングのDPI（例: 96=画面用, 300=印刷用） |
+
+### DPIについて
+
+DPIを指定しない場合、viewBoxの値がそのままピクセル数として使用されます。
+
+DPIを指定すると、SVGのドキュメント単位（mm、cm、in等）に基づいてピクセルサイズが計算されます：
+
+| ドキュメントサイズ | DPI | 出力ピクセルサイズ |
+|------------------|-----|------------------|
+| A4 (210mm x 297mm) | 96 | 794 x 1123 |
+| A4 (210mm x 297mm) | 300 | 2480 x 3508 |
+| Letter (8.5in x 11in) | 300 | 2550 x 3300 |
 
 ## アーキテクチャ
 
@@ -240,6 +291,36 @@ python -m pytest tests/ -v
 
 # 特定のテストファイルを実行
 python -m pytest tests/test_svg_parser.py -v
+
+# レンダリングテストのみ実行
+python -m pytest tests/test_renderer.py -v
+
+# 画像比較の閾値を変更して実行
+python -m pytest tests/ --image-threshold=0.01
+```
+
+### テストカテゴリ
+
+| テストクラス | 説明 |
+|-------------|------|
+| `TestCairoRectRendering` | rect要素のCairoレンダリング検証 |
+| `TestCairoPathRendering` | path要素のCairoレンダリング検証 |
+| `TestImageDimensions` | 出力画像サイズの検証 |
+| `TestInkscapeCompatibility` | Inkscape出力との互換性（viewBoxサイズ） |
+| `TestInkscapeCompatibilityDPI` | Inkscape出力との互換性（DPI指定、300dpi） |
+
+### テストケースの追加方法
+
+DPI対応のInkscape互換性テストを追加するには：
+
+1. `tests/fixtures/` にSVGファイルとInkscapeでエクスポートしたPNGを配置
+2. `tests/test_renderer.py` の `DPI_TEST_CASES` リストにエントリを追加
+
+```python
+DPI_TEST_CASES = [
+    # (SVGファイル名, PNG名, レイヤー名, DPI, 期待サイズ, 説明)
+    ('new-test.svg', 'new-test.png', 'Layer 1', 300, (2480, 3508), 'New test case'),
+]
 ```
 
 ## 実装状況
@@ -254,6 +335,8 @@ python -m pytest tests/test_svg_parser.py -v
 - [x] SVG出力の基本実装
 - [x] 基本的なスタイル属性のサポート
 - [x] 単体テスト
+- [x] DPI指定によるレンダリング（96dpi〜300dpi）
+- [x] ドキュメント単位（mm, cm, in等）の自動検出
 
 ### フェーズ2: 機能拡張（今後）
 

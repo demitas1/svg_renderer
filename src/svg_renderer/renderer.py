@@ -14,15 +14,17 @@ import re
 class Renderer:
     """Cairo-based renderer for SVG elements."""
 
-    def __init__(self, width: int, height: int):
+    def __init__(self, width: int, height: int, scale: float = 1.0):
         """Initialize the renderer with output dimensions.
 
         Args:
             width: Width of the output surface in pixels
             height: Height of the output surface in pixels
+            scale: Scale factor to apply to the coordinate system
         """
         self.width = width
         self.height = height
+        self.scale = scale
         self.surface: Optional[cairo.ImageSurface] = None
         self.context: Optional[cairo.Context] = None
 
@@ -34,6 +36,10 @@ class Renderer:
         """
         self.surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.width, self.height)
         self.context = cairo.Context(self.surface)
+
+        # Apply scale transformation for DPI support
+        if self.scale != 1.0:
+            self.context.scale(self.scale, self.scale)
 
         # Transparent background (ARGB32 format is initialized to transparent by default)
         # No need to paint anything for transparent background
